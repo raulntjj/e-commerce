@@ -1,0 +1,184 @@
+version: '3.8'
+
+networks:
+  ecommerce-net:
+  ecommerce-internal:
+    internal: true
+
+volumes:
+  mysql_data:
+  mongo_data:
+  redis_data:
+  grafana_data:
+
+services:
+  # --- GATEWAY ---
+  api-gateway:
+    build:
+      context: ./api-gateway
+      args: { PHP_ENV: development }
+    volumes: [./api-gateway:/app]
+    ports: ["8000:80"]
+    environment:
+      - APP_ENV=development
+      # Conexão com Redis
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      # URLs dos outros serviços
+      - USER_SERVICE_URL=http://user-service
+      - PRODUCT_SERVICE_URL=http://product-service
+      - CART_SERVICE_URL=http://cart-service:3000
+      - ORDER_SERVICE_URL=http://order-service
+      - PAYMENT_SERVICE_URL=http://payment-service:3000
+      - NOTIFICATION_SERVICE_URL=http://notification-service:3000
+    networks: [ecommerce-net]
+    depends_on: [user-service, product-service, cart-service, order-service, payment-service, notification-service]
+
+  # --- SERVIÇOS PHP/LUMEN ---
+  user-service: # MySQL
+    build: { context: ./user-service }
+    volumes: [./user-service:/app]
+    environment:
+      - APP_ENV=development
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=users_db
+      - DB_USERNAME=root
+      - DB_PASSWORD=root
+      - RABBITMQ_HOST=rabbitmq
+    networks: [ecommerce-net, ecommerce-internal]
+
+  product-service: # MySQL
+    build: { context: ./product-service }
+    volumes: [./product-service:/app]
+    environment:
+      - APP_ENV=development
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=products_db
+      - DB_USERNAME=root
+      - DB_PASSWORD=root
+      - RABBITMQ_HOST=rabbitmq
+    networks: [ecommerce-net, ecommerce-internal]
+
+  order-service: # MongoDB
+    build: { context: ./order-service }
+    volumes: [./order-service:/app]
+    environment:
+      - APP_ENV=development
+      - DB_CONNECTION=mongodb
+      - DB_HOST=mongodb
+      - DB_PORT=27017
+      - DB_DATABASE=orders_db
+      - DB_USERNAME=root
+      - DB_PASSWORD=root
+      - RABBITMQ_HOST=rabbitmq
+    networks: [ecommerce-net, ecommerce-internal]
+
+  # --- SERVIÇOS NODE.JS ---
+  cart-service: # Redis
+    build:
+      context: ./cart-service
+      args: { NODE_ENV: development }
+    volumes: [./cart-service:/app, /app/node_modules]
+    ports: ["8003:3000"]
+    environment:
+      - NODE_ENV=development
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - RABBITMQ_HOST=rabbitmq
+    networks: [ecommerce-net, ecommerce-internal]
+
+  payment-service: # MySQL
+    build:
+      context: ./payment-service
+      args: { NODE_ENV: development }
+    volumes: [./payment-service:/app, /app/node_modules]
+    ports: ["8005:3000", "9102:9100"]
+    environment:
+      - NODE_ENV=development
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=payments_db
+      - DB_USERNAME=root
+      - DB_PASSWORD=root
+      - RABBITMQ_HOST=rabbitmq
+    networks: [ecommerce-net, ecommerce-internal]
+
+  notification-service: # MongoDB
+    build:
+      context: ./notification-service
+      args: { NODE_ENV: development }
+    volumes: [./notification-service:/app, /app/node_modules]
+    ports: ["8006:3000", "9103:9100"]
+    environment:
+      - NODE_ENV=development
+      - DB_CONNECTION=mongodb
+      - DB_HOST=mongodb
+      - DB_PORT=27017
+      - DB_DATABASE=notifications_db
+      - DB_USERNAME=root
+      - DB_PASSWORD=root
+      - RABBITMQ_HOST=rabbitmq
+    networks: [ecommerce-net, ecommerce-internal]
+
+  # --- BANCOS, CACHE E MENSAGERIA ---
+  mysql:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=users_db # BD padrão
+    volumes: ["mysql_data:/var/lib/mysql"]
+    ports: ["3306:3306"]
+    networks: [ecommerce-internal]
+
+  mongodb:
+    image: mongo:6.0
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=root
+    volumes: ["mongo_data:/data/db"]
+    networks: [ecommerce-internal]
+
+  redis:
+    image: redis:7-alpine
+    volumes: ["redis_data:/data"]
+    networks: [ecommerce-internal]
+
+  rabbitmq:
+    image: rabbitmq:3.11-management-alpine
+    environment:
+      - RABBITMQ_DEFAULT_USER=root
+      - RABBITMQ_DEFAULT_PASS=root
+    ports: ["5672:5672", "15672:15672"]
+    networks: [ecommerce-internal]
+
+    prometheus:
+    image: prom/prometheus:v2.47.2
+    volumes:
+      - ./monitoring/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yaml'
+      - '--web.enable-admin-api'
+    ports:
+      - "9090:9090"
+    networks:
+      - ecommerce-net
+
+  grafana:
+    image: grafana/grafana-oss:10.2.2
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - ecommerce-net
+    depends_on:
+      - prometheus

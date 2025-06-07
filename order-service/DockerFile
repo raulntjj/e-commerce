@@ -1,0 +1,26 @@
+FROM php:8.2-fpm-alpine
+
+WORKDIR /app
+
+RUN apk add --no-cache \
+        build-base \
+        autoconf \
+        $PHPIZE_DEPS \
+        libzip-dev \
+        zip \
+        && pecl install mongodb redis \
+        && docker-php-ext-enable mongodb redis \
+        && docker-php-ext-install pdo_mysql bcmath sockets zip
+
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+COPY composer.json composer.lock ./
+RUN composer install --no-interaction --no-plugins --no-scripts --prefer-dist
+
+COPY . .
+
+RUN chown -R www-data:www-data /app
+
+EXPOSE 9000
+
+CMD ["php-fpm"]
