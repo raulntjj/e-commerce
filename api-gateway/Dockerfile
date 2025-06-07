@@ -2,15 +2,22 @@ FROM php:8.2-fpm-alpine
 
 WORKDIR /app
 
-RUN apk add --no-cache \
+RUN apk update && apk add --no-cache \
         build-base \
         autoconf \
-        $PHPIZE_DEPS \
         libzip-dev \
         zip \
-        && pecl install mongodb redis \
-        && docker-php-ext-enable mongodb redis \
-        && docker-php-ext-install pdo_mysql bcmath sockets zip
+        zlib-dev \
+        libpng-dev \
+        oniguruma-dev \
+        curl-dev \
+        libxml2-dev \
+        postgresql-dev \
+        $PHPIZE_DEPS
+
+RUN pecl install mongodb redis \
+    && docker-php-ext-enable mongodb redis \
+    && docker-php-ext-install pdo_mysql bcmath sockets zip opcache
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
