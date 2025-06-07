@@ -1,40 +1,30 @@
-FROM php:8.2-fpm-alpine
+# Estágio de build com o Composer
+FROM composer:2 as vendor
 
 WORKDIR /app
 
-RUN apk update && apk add --no-cache \
-    build-base \
-    autoconf \
-    libzip-dev \
-    zip \
-    zlib-dev \
-    libpng-dev \
-    oniguruma-dev \
-    curl-dev \
-    libxml2-dev \
-    postgresql-dev \
-    linux-headers \
-    $PHPIZE_DEPS
+COPY database/ database/
+COPY composer.json composer.json
+COPY composer.lock composer.lock
 
-# Install extensions separately to isolate failures
-RUN pecl install mongodb redis \
-    && docker-php-ext-enable mongodb redis
+RUN composer install \
+    --ignore-platform-reqs \
+    --no-interaction \
+    --no-plugins \
+    --no-scripts \
+    --prefer-dist
 
-RUN docker-php-ext-install pdo_mysql bcmath zip opcache
 
-# Special handling for sockets
-RUN docker-php-ext-configure sockets --enable-sockets=no \
-    || docker-php-ext-install sockets
+# Estágio final com Nginx e PHP-FPM
+FROM webdevops/php-nginx:8.2-alpine
 
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Variáveis de ambiente
+ENV WEB_DOCUMENT_ROOT /app/public
+ENV APP_ENV=production
 
-COPY composer.json composer.lock ./
-RUN composer install --no-interaction --no-plugins --no-scripts --prefer-dist
+# Copia os arquivos da aplicação e as dependências
+COPY . /app
+COPY --from=vendor /app/vendor/ /app/vendor/
 
-COPY . .
-
-RUN chown -R www-data:www-data /app
-
-EXPOSE 9000
-
-CMD ["php-fpm"]
+# Ajusta as permissões
+RUN chown -R application:application /app

@@ -18,13 +18,11 @@ services:
       context: ./api-gateway
       args: { PHP_ENV: development }
     volumes: [./api-gateway:/app]
-    ports: ["8000:80"]
+    ports: ["8080:80"]
     environment:
       - APP_ENV=development
-      # Conexão com Redis
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      # URLs dos outros serviços
       - USER_SERVICE_URL=http://user-service
       - PRODUCT_SERVICE_URL=http://product-service
       - CART_SERVICE_URL=http://cart-service:3000
@@ -38,6 +36,7 @@ services:
   user-service: # MySQL
     build: { context: ./user-service }
     volumes: [./user-service:/app]
+    ports: ["4000:80"]
     environment:
       - APP_ENV=development
       - DB_CONNECTION=mysql
@@ -52,6 +51,7 @@ services:
   product-service: # MySQL
     build: { context: ./product-service }
     volumes: [./product-service:/app]
+    ports: ["4001:80"]
     environment:
       - APP_ENV=development
       - DB_CONNECTION=mysql
@@ -66,6 +66,7 @@ services:
   order-service: # MongoDB
     build: { context: ./order-service }
     volumes: [./order-service:/app]
+    ports: ["4002:80"]
     environment:
       - APP_ENV=development
       - DB_CONNECTION=mongodb
@@ -83,7 +84,7 @@ services:
       context: ./cart-service
       args: { NODE_ENV: development }
     volumes: [./cart-service:/app, /app/node_modules]
-    ports: ["8003:3000"]
+    ports: ["4003:3000"]
     environment:
       - NODE_ENV=development
       - REDIS_HOST=redis
@@ -96,7 +97,7 @@ services:
       context: ./payment-service
       args: { NODE_ENV: development }
     volumes: [./payment-service:/app, /app/node_modules]
-    ports: ["8005:3000", "9102:9100"]
+    ports: ["4005:3000", "9102:9100"]
     environment:
       - NODE_ENV=development
       - DB_CONNECTION=mysql
@@ -113,7 +114,7 @@ services:
       context: ./notification-service
       args: { NODE_ENV: development }
     volumes: [./notification-service:/app, /app/node_modules]
-    ports: ["8006:3000", "9103:9100"]
+    ports: ["4004:3000", "9103:9100"]
     environment:
       - NODE_ENV=development
       - DB_CONNECTION=mongodb
@@ -132,7 +133,7 @@ services:
       - MYSQL_ROOT_PASSWORD=root
       - MYSQL_DATABASE=users_db # BD padrão
     volumes: ["mysql_data:/var/lib/mysql"]
-    ports: ["3306:3306"]
+    ports: ["3307:3306"]
     networks: [ecommerce-internal]
 
   mongodb:
@@ -171,7 +172,7 @@ services:
   grafana:
     image: grafana/grafana-oss:10.2.2
     ports:
-      - "3000:3000"
+      - "3001:3000"
     volumes:
       - grafana_data:/var/lib/grafana
     environment:
