@@ -125,7 +125,7 @@ services:
       - RABBITMQ_HOST=rabbitmq
     networks: [ecommerce-net, ecommerce-internal]
 
-  # --- BANCOS, CACHE E MENSAGERIA ---
+  # --- BANCOS, CACHE, MENSAGERIA e MONITORAMENTO ---
   mysql:
     image: mysql:8.0
     environment:
@@ -156,7 +156,7 @@ services:
     ports: ["5672:5672", "15672:15672"]
     networks: [ecommerce-internal]
 
-    prometheus:
+  prometheus:
     image: prom/prometheus:v2.47.2
     volumes:
       - ./monitoring/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml
