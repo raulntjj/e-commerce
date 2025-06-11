@@ -1,7 +1,12 @@
 const fastify = require('fastify')();
 
-fastify.get('/ping', async () => {
-  return { status: 'ok', message: 'pong' };
+fastify.get('/', async () => {
+  return {
+    system: 'Notification Service - eCommerce',
+    description: 'Serviço de gerenciamento de notificações para eCommerce',
+    version: '1.0.0',
+    status: 'Operacional'
+  };
 });
 
 fastify.listen({ port: 3000, host: '0.0.0.0' }, (err) => {

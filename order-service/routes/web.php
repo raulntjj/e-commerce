@@ -14,5 +14,10 @@
 */
 
 $router->get('/', function () use ($router) {
-    return $router->app->version();
+    return response()->json([
+        'system' => 'Order Service - eCommerce',
+        'description' => 'Serviço de gerenciamento de pedidos para eCommerce',
+        'version' => '1.0.0',
+        'status' => 'Operacional',
+    ], 200);
 });
