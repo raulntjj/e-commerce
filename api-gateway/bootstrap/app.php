@@ -38,15 +38,30 @@ $app = new Laravel\Lumen\Application(
 |
 */
 
-$app->singleton(
-    Illuminate\Contracts\Debug\ExceptionHandler::class,
-    App\Exceptions\Handler::class
-);
+// Adicione isto após a criação da aplicação
+$app->singleton(\Redis::class, function () {
+    $redis = new \Redis();
+    $redis->connect(
+        env('REDIS_HOST', 'redis'),
+        env('REDIS_PORT', 6379)
+    );
+    return $redis;
+});
 
-$app->singleton(
-    Illuminate\Contracts\Console\Kernel::class,
-    App\Console\Kernel::class
-);
+$app->singleton(\GuzzleHttp\Client::class, function () {
+    return new \GuzzleHttp\Client();
+});
+
+$app->singleton(\App\Services\CircuitBreaker::class, function ($app) {
+    return new \App\Services\CircuitBreaker($app->make(\Redis::class));
+});
+
+$app->singleton(\App\Services\Router::class, function ($app) {
+    return new \App\Services\Router(
+        $app->make(\GuzzleHttp\Client::class),
+        $app->make(\App\Services\CircuitBreaker::class)
+    );
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -72,9 +87,9 @@ $app->configure('app');
 |
 */
 
-// $app->middleware([
-//     App\Http\Middleware\ExampleMiddleware::class
-// ]);
+$app->middleware([
+    App\Http\Middleware\ResponseFormatter::class,
+]);
 
 // $app->routeMiddleware([
 //     'auth' => App\Http\Middleware\Authenticate::class,
@@ -91,7 +106,7 @@ $app->configure('app');
 |
 */
 
-// $app->register(App\Providers\AppServiceProvider::class);
+$app->register(App\Providers\AppServiceProvider::class);
 // $app->register(App\Providers\AuthServiceProvider::class);
 // $app->register(App\Providers\EventServiceProvider::class);
 
