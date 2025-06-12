@@ -21,3 +21,11 @@ $router->get('/', function () use ($router) {
         'status' => 'Operacional',
     ], 200);
 });
+
+$router->post('/auth/login', 'AuthController@login');
+
+$router->group(['middleware' => 'auth'], function () use ($router) {
+    $router->get('/users', 'UserController@getAllUsers');
+    $router->get('/users/{id}', 'UserController@get');
+    $router->post('/users', 'UserController@create');
+});
