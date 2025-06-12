@@ -49,6 +49,23 @@ services:
     networks: [ecommerce-net, ecommerce-internal]
     depends_on: [mysql, rabbitmq]
 
+  user-service-worker:
+    build: { context: ./user-service }
+    volumes: [./user-service:/app]
+    command: php /app/artisan rabbitmq:consume
+    environment:
+      - APP_ENV=development
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=users_db
+      - DB_USERNAME=root
+      - DB_PASSWORD=root
+      - RABBITMQ_HOST=rabbitmq
+    networks: [ecommerce-internal]
+    depends_on: [rabbitmq, mysql]
+    restart: on-failure
+
   product-service: # MySQL
     build: { context: ./product-service }
     volumes: [./product-service:/app]
