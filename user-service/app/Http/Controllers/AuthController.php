@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Responses\ApiResponse;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,7 +19,7 @@ class AuthController extends Controller {
         $user = User::where('email', $request->input('email'))->first();
 
         if (!$user || !Hash::check($request->input('password'), $user->password)) {
-            return response()->json(['error' => 'Credenciais inválidas'], 401);
+            return ApiResponse::error('Credenciais inválidas', 401);
         }
 
         $payload = [
@@ -32,10 +33,12 @@ class AuthController extends Controller {
 
         $jwt = JWT::encode($payload, env('JWT_SECRET'), 'HS256');
 
-        return response()->json([
+        $data = [
             'access_token' => $jwt,
             'token_type' => 'bearer',
-            'expires_in' => env('JWT_EXPIRES_IN', 3600),
-        ]);
+            'expires_in' => (int) env('JWT_EXPIRES_IN', 3600),
+        ];
+        
+        return ApiResponse::success($data, 'Login bem-sucedido.');
     }
 }

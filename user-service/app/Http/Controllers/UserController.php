@@ -2,17 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Repositories\Contracts\UserRepositoryInterface;
 use App\Services\RabbitMQService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Http\JsonResponse;
+use App\Http\Responses\ApiResponse;
 
 class UserController extends Controller {
     protected RabbitMQService $rabbitMQService;
+    private UserRepositoryInterface $userRepository;
 
-    public function __construct(RabbitMQService $rabbitMQService) {
+    public function __construct(
+        RabbitMQService $rabbitMQService, 
+        UserRepositoryInterface $userRepository
+    ) {
         $this->rabbitMQService = $rabbitMQService;
+        $this->userRepository = $userRepository;
     }
 
     public function create(Request $request): JsonResponse {
@@ -22,35 +27,25 @@ class UserController extends Controller {
             'password' => 'required|string|min:6',
         ]);
 
-        $user = User::create([
-            'name' => $request->input('name'),
-            'email' => $request->input('email'),
-            'password' => Hash::make($request->input('password')),
-        ]);
+        $user = $this->userRepository->create($request->all());
         
         $this->rabbitMQService->publish('user.created', $user->toArray());
         
-        return response()->json($user, 201);
+        return ApiResponse::success($user, 'Usuário criado com sucesso.', 201);
     }
 
     public function get($id): JsonResponse {
-        $user = User::find($id);
+        $user = $this->userRepository->find($id);
 
         if (!$user) {
-            return response()->json(['error' => 'User not found'], 404);
+            return ApiResponse::error('Usuário não encontrado', 404);
         }
 
-        return response()->json($user);
+        return ApiResponse::success($user);
     }
 
     public function getAllUsers(): JsonResponse {
-        $users = User::all();
-
-        return response()->json($users);
-
-        // if ($users->isEmpty()) {
-        //     return response()->json(['message' => 'No users found'], 404);
-        // }
-        // return response()->json($users);
+        $users = $this->userRepository->all();
+        return ApiResponse::success($users, 'Usuários listados com sucesso.');
     }
 }
