@@ -22,23 +22,25 @@ class AuthController extends Controller {
             return ApiResponse::error('Credenciais inválidas', 401);
         }
 
+        $expiresIn = (int) config('services.jwt.expires_in');
+        $secret = config('services.jwt.secret');
+
         $payload = [
             'iss' => 'user-service',
             'sub' => $user->uuid,
             'name' => $user->name,
             'email' => $user->email,
             'iat' => time(),
-            'exp' => time() + env('JWT_EXPIRES_IN', 3600),
+            'exp' => time() + $expiresIn,
         ];
 
-        $jwt = JWT::encode($payload, env('JWT_SECRET'), 'HS256');
+        $jwt = JWT::encode($payload, $secret, 'HS256');
 
         $data = [
             'access_token' => $jwt,
             'token_type' => 'bearer',
-            'expires_in' => (int) env('JWT_EXPIRES_IN', 3600),
+            'expires_in' => $expiresIn,
         ];
-        
         return ApiResponse::success($data, 'Login bem-sucedido.');
     }
 }
