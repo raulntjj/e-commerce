@@ -65,6 +65,10 @@ class Router {
         }
         
         $headers['X-Request-ID'] = $request->header('X-Request-ID', uniqid());
+
+        if (isset($request->auth) && isset($request->auth->sub)) {
+            $headers['X-User-ID'] = $request->auth->sub;
+        }
         
         return $headers;
     }

@@ -75,6 +75,7 @@ $app->singleton(\App\Services\Router::class, function ($app) {
 */
 
 $app->configure('app');
+$app->configure('services');
 
 /*
 |--------------------------------------------------------------------------
@@ -91,9 +92,9 @@ $app->middleware([
     App\Http\Middleware\ResponseFormatter::class,
 ]);
 
-// $app->routeMiddleware([
-//     'auth' => App\Http\Middleware\Authenticate::class,
-// ]);
+$app->routeMiddleware([
+    'auth' => App\Http\Middleware\Authenticate::class,
+]);
 
 /*
 |--------------------------------------------------------------------------
