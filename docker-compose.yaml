@@ -29,8 +29,8 @@ services:
       - ORDER_SERVICE_URL=http://order-service
       - PAYMENT_SERVICE_URL=http://payment-service:3000
       - NOTIFICATION_SERVICE_URL=http://notification-service:3000
-    networks: [ecommerce-net]
-    depends_on: [user-service, product-service, cart-service, order-service, payment-service, notification-service]
+    networks: [ecommerce-net, ecommerce-internal]
+    depends_on: [user-service, product-service, cart-service, order-service, payment-service, notification-service, redis]
 
   # --- SERVIÇOS PHP/LUMEN ---
   user-service: # MySQL
@@ -47,6 +47,7 @@ services:
       - DB_PASSWORD=root
       - RABBITMQ_HOST=rabbitmq
     networks: [ecommerce-net, ecommerce-internal]
+    depends_on: [mysql, rabbitmq]
 
   product-service: # MySQL
     build: { context: ./product-service }
@@ -147,7 +148,7 @@ services:
   redis:
     image: redis:7-alpine
     volumes: ["redis_data:/data"]
-    networks: [ecommerce-internal]
+    networks: [ecommerce-internal, ecommerce-net]
 
   rabbitmq:
     image: rabbitmq:3.11-management-alpine
@@ -183,3 +184,18 @@ services:
       - ecommerce-net
     depends_on:
       - prometheus
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    environment:
+      - PMA_HOST=mysql
+      - PMA_USER=root
+      - PMA_PASSWORD=root
+      - PMA_ARBITRARY=0
+    ports:
+      - "8081:80"
+    networks:
+      - ecommerce-net
+      - ecommerce-internal
+    depends_on:
+      - mysql
