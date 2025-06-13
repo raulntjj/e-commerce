@@ -1,7 +1,5 @@
 <?php
 
-use App\Services\RabbitMQService;
-
 require_once __DIR__.'/../vendor/autoload.php';
 
 (new Laravel\Lumen\Bootstrap\LoadEnvironmentVariables(
@@ -50,8 +48,8 @@ $app->singleton(
     App\Console\Kernel::class
 );
 
-$app->singleton(\App\Services\RabbitMQService::class, function (): RabbitMQService {
-    return new \App\Services\RabbitMQService();
+$app->singleton(App\Services\RabbitMQService::class, function (): App\Services\RabbitMQService {
+    return new App\Services\RabbitMQService();
 });
 
 /*
@@ -101,6 +99,8 @@ $app->routeMiddleware([
 $app->register(App\Providers\AppServiceProvider::class);
 $app->register(App\Providers\AuthServiceProvider::class);
 $app->register(App\Providers\EventServiceProvider::class);
+$app->register(App\Providers\RepositoryServiceProvider::class);
+
 
 /*
 |--------------------------------------------------------------------------

@@ -19,7 +19,7 @@ class Authenticate {
                 throw new Exception('Token not provided', 401);
             }
 
-            $decoded = JWT::decode($token, new Key(env('JWT_SECRET'), 'HS256'));
+            $decoded = JWT::decode($token, new Key(config('services.jwt.secret'), 'HS256'));
             
             $request->auth = $decoded;
             

@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use Illuminate\Auth\GenericUser;
 use Illuminate\Support\ServiceProvider;
 
 class AuthServiceProvider extends ServiceProvider {
@@ -17,7 +18,7 @@ class AuthServiceProvider extends ServiceProvider {
             try {
                 $decoded = JWT::decode($token, new Key(config('services.jwt.secret'), 'HS256'));
 
-                return (object) ['uuid' => $decoded->sub];
+                return new GenericUser(['id' => $decoded->sub]);
 
             } catch (\Exception $e) {
                 return null;
