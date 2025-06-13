@@ -62,6 +62,7 @@ services:
       - DB_USERNAME=root
       - DB_PASSWORD=root
       - RABBITMQ_HOST=rabbitmq
+      - JWT_SECRET=${JWT_SECRET}
     networks: [ecommerce-internal]
     depends_on: [rabbitmq, mysql]
     restart: on-failure
@@ -79,7 +80,26 @@ services:
       - DB_USERNAME=root
       - DB_PASSWORD=root
       - RABBITMQ_HOST=rabbitmq
+      - JWT_SECRET=${JWT_SECRET}
     networks: [ecommerce-net, ecommerce-internal]
+
+  product-service-worker:
+    build: { context: ./product-service }
+    volumes: [./product-service:/app]
+    command: php /app/artisan rabbitmq:consume
+    environment:
+      - APP_ENV=development
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=products_db
+      - DB_USERNAME=root
+      - DB_PASSWORD=root
+      - RABBITMQ_HOST=rabbitmq
+      - JWT_SECRET=${JWT_SECRET}
+    networks: [ecommerce-internal]
+    depends_on: [rabbitmq, mysql]
+    restart: on-failure
 
   order-service: # MongoDB
     build: { context: ./order-service }
