@@ -26,13 +26,19 @@ class RabbitMQService {
         $this->channel->basic_publish($msg, $exchange, $routingKey);
     }
 
-    public function consume(string $queueName, string $routingKey, \Closure $callback): void {
+    public function consume(string $queueName, string|array $routingKey, \Closure $callback): void {
         $exchange = 'ecommerce_events';
         $this->channel->exchange_declare($exchange, 'topic', false, true, false);
         $this->channel->queue_declare($queueName, false, true, false, false);
-        $this->channel->queue_bind($queueName, $exchange, $routingKey);
 
-        echo " [*] Waiting for messages for routing key '$routingKey'. To exit press CTRL+C\n";
+        $routingKeys = is_array($routingKey) ? $routingKey : [$routingKey];
+
+        foreach ($routingKeys as $key) {
+            $this->channel->queue_bind($queueName, $exchange, $key);
+            echo " [*] Bound queue '$queueName' to exchange '$exchange' with routing key '$key'\n";
+        }
+
+        echo " [*] Waiting for messages. To exit press CTRL+C\n";
 
         $this->channel->basic_consume($queueName, '', false, false, false, false, function (AMQPMessage $msg) use ($callback) {
             $callback($msg);
