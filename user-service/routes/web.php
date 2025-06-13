@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Responses\ApiResponse;
+
 /** @var \Laravel\Lumen\Routing\Router $router */
 
 /*
@@ -14,12 +16,12 @@
 */
 
 $router->get('/', function () use ($router) {
-    return response()->json([
+    return ApiResponse::success([
         'system' => 'User Service - eCommerce',
         'description' => 'Serviço de gerenciamento de usuários para eCommerce',
         'version' => '1.0.0',
         'status' => 'Operacional',
-    ], 200);
+    ], 'Requisição bem-sucedida');
 });
 
 $router->post('/auth/login', 'AuthController@login');
