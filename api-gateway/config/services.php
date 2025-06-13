@@ -23,8 +23,9 @@ return [
           'timeout' => env('PRODUCT_SERVICE_TIMEOUT', 2),
         ],
     ],
-    'jwt' => [
-        'secret' => env('JWT_SECRET'),
-        'expires_in' => env('JWT_EXPIRES_IN', 3600),
+    'circuit_break' => [
+        'failure_threshold' => 3,
+        'success_threshold' => 2,
+        'timeout' => 60,
     ],
 ];

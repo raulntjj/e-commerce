@@ -57,19 +57,14 @@ class Router {
 
     protected function prepareHeaders(Request $request): array {
         $headers = [];
-        
+    
         foreach ($request->headers as $key => $values) {
             if (in_array(strtolower($key), ['authorization', 'content-type', 'accept', 'x-request-id'])) {
                 $headers[$key] = $values;
             }
         }
-        
+    
         $headers['X-Request-ID'] = $request->header('X-Request-ID', uniqid());
-
-        if (isset($request->auth) && isset($request->auth->sub)) {
-            $headers['X-User-ID'] = $request->auth->sub;
-        }
-        
         return $headers;
     }
 }

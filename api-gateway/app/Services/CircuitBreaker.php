@@ -9,9 +9,9 @@ class CircuitBreaker {
     public function __construct(\Redis $redis) {
         $this->redis = $redis;
         $this->config = [
-            'failure_threshold' => 3,
-            'success_threshold' => 2,
-            'timeout' => 60,
+            'failure_threshold' => config('services.circuit_break.failure_threshold', 3),
+            'success_threshold' => config('services.circuit_break.success_threshold', 2),
+            'timeout' => config('services.circuit_break.timeout', 60)
         ];
     }
     
