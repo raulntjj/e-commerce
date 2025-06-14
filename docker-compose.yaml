@@ -111,10 +111,11 @@ services:
       - DB_CONNECTION=mongodb
       - DB_HOST=mongodb
       - DB_PORT=27017
-      - DB_DATABASE=orders_db
+      - DB_DATABASE=oders_db
       - DB_USERNAME=root
       - DB_PASSWORD=root
       - RABBITMQ_HOST=rabbitmq
+      - JWT_SECRET=${JWT_SECRET}
     networks: [ecommerce-net, ecommerce-internal]
 
   # --- SERVIÇOS NODE.JS ---
