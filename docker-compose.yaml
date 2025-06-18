@@ -102,21 +102,22 @@ services:
     depends_on: [rabbitmq, mysql]
     restart: on-failure
 
-  order-service: # MongoDB
+  order-service:
     build: { context: ./order-service }
     volumes: [./order-service:/app]
     ports: ["4002:80"]
     environment:
       - APP_ENV=development
-      - DB_CONNECTION=mongodb
-      - DB_HOST=mongodb
-      - DB_PORT=27017
-      - DB_DATABASE=oders_db
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=orders_db
       - DB_USERNAME=root
       - DB_PASSWORD=root
       - RABBITMQ_HOST=rabbitmq
       - JWT_SECRET=${JWT_SECRET}
     networks: [ecommerce-net, ecommerce-internal]
+    depends_on: [mysql, rabbitmq]
 
   # --- SERVIÇOS NODE.JS ---
   cart-service: # Redis
@@ -171,8 +172,8 @@ services:
     image: mysql:8.0
     environment:
       - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_DATABASE=users_db # BD padrão
-    volumes: ["mysql_data:/var/lib/mysql"]
+      - MYSQL_DATABASE=users_db
+    volumes: ["mysql_data:/home/raulntjj/Desktop/ecommerce-project/databases/mysql"]
     ports: ["3307:3306"]
     networks: [ecommerce-internal]
 
@@ -181,12 +182,12 @@ services:
     environment:
       - MONGO_INITDB_ROOT_USERNAME=root
       - MONGO_INITDB_ROOT_PASSWORD=root
-    volumes: ["mongo_data:/data/db"]
+    volumes: ["mongo_data:/home/raulntjj/Desktop/ecommerce-project/databases/mongodb"]
     networks: [ecommerce-internal]
 
   redis:
     image: redis:7-alpine
-    volumes: ["redis_data:/data"]
+    volumes: ["redis_data:/home/raulntjj/Desktop/ecommerce-project/databases/redis"]
     networks: [ecommerce-internal, ecommerce-net]
 
   rabbitmq:
@@ -232,7 +233,7 @@ services:
       - PMA_PASSWORD=root
       - PMA_ARBITRARY=0
     ports:
-      - "8081:80"
+      - "8001:80"
     networks:
       - ecommerce-net
       - ecommerce-internal

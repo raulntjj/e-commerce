@@ -24,7 +24,9 @@ $router->get('/', function () use ($router) {
     ], 'Requisição bem-sucedida');
 });
 
-$router->post('/auth/login', 'AuthController@login');
+$router->post('/auth/login', action: 'AuthController@login');
+$router->post('/register', 'UserController@create');
+
 
 $router->group(['middleware' => 'auth'], function () use ($router) {
     $router->get('/users', 'UserController@getAll');

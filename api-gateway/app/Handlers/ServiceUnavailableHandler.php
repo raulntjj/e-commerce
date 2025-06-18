@@ -21,7 +21,7 @@ class ServiceUnavailableHandler {
         return ApiResponse::error(
             'Erro no serviço remoto',
             $statusCode,
-            $e->getResponse() ? json_decode($e->getResponse()->getBody(), true) : null
+            $e->getResponse() ? json_decode($e->getResponse()->getBody(), true)['errors'] : null
         );
     }
 }
