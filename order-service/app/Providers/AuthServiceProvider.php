@@ -8,7 +8,12 @@ use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
 class AuthServiceProvider extends ServiceProvider {
+    public function register(): void {
+        //
+    }
+
     public function boot(): void {
+        // Autenticação via request de API (stateless)
         $this->app['auth']->viaRequest('api', function ($request): GenericUser|null {
             $token = $request->bearerToken();
 

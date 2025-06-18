@@ -1,5 +1,7 @@
 <?php
 
+use MongoDB\Laravel\MongoDBServiceProvider;
+
 require_once __DIR__.'/../vendor/autoload.php';
 
 (new Laravel\Lumen\Bootstrap\LoadEnvironmentVariables(
@@ -99,7 +101,6 @@ $app->routeMiddleware([
 
 $app->register(App\Providers\AppServiceProvider::class);
 $app->register(App\Providers\AuthServiceProvider::class);
-$app->register(MongoDB\Laravel\MongoDBServiceProvider::class);
 $app->register(App\Providers\RepositoryServiceProvider::class);
 
 /*

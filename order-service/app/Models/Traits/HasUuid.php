@@ -3,14 +3,19 @@
 namespace App\Models\Traits;
 
 use Illuminate\Support\Str;
-use MongoDB\Laravel\Eloquent\Model;
 
 trait HasUuid {
   protected static function bootHasUuid(): void {
-    static::creating(function (Model $model): void {
-      if (empty($model->uuid)) {
-        $model->uuid = (string) Str::uuid();
+    static::creating(function ($model): void {
+      if (empty($model->{$model->getKeyName()})) {
+        $model->{$model->getKeyName()} = (string) Str::uuid();
       }
     });
+  }
+
+  public function initializeHasUuid(): void {
+    $this->primaryKey = 'uuid';
+    $this->keyType = 'string';
+    $this->incrementing = false;
   }
 }

@@ -13,6 +13,7 @@ $router->get('/', function () {
     ], 'Conexão bem-sucedida com o Order Service');
 });
 
+
 $router->group(['middleware' => 'auth'], function () use ($router) {
     $router->get('/orders', 'OrderController@getAll');
     $router->get('/orders/{id}', 'OrderController@get');
