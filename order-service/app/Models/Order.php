@@ -6,6 +6,7 @@ use App\Models\Traits\HasUuid;
 use App\Models\Traits\HasUserAction;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Order extends Model {
     use HasFactory, HasUuid, HasUserAction;
@@ -17,18 +18,21 @@ class Order extends Model {
     protected $fillable = [
         'uuid',
         'user_id',
-        'products',
         'total_amount',
         'status',
-        'shipping_address',
+        'shipping_address_snapshot',
         'created_by',
         'updated_by',
         'deleted_by',
     ];
 
     protected $casts = [
-        'products' => 'array',
-        'shipping_address' => 'array',
+        'shipping_address_snapshot' => 'array',
         'total_amount' => 'decimal:2',
     ];
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(OrderItem::class, 'order_uuid', 'uuid');
+    }
 }

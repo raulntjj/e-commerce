@@ -11,15 +11,12 @@ return new class extends Migration
         Schema::create('orders', function (Blueprint $table) {
             $table->uuid('uuid')->primary();
             $table->uuid('user_id');
-            $table->json('products');
             $table->decimal('total_amount', 10, 2);
             $table->string('status')->default('pending_payment');
-            $table->json('shipping_address');
+            $table->json('shipping_address_snapshot');
             $table->timestamps();
             $table->softDeletes();
-            $table->uuid('created_by')->nullable();
-            $table->uuid('updated_by')->nullable();
-            $table->uuid('deleted_by')->nullable();
+            $table->userActions();
         });
     }
 

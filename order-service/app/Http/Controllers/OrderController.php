@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Responses\ApiResponse;
 use App\Repositories\Contracts\OrderRepositoryInterface;
 use App\Services\RabbitMQService;
-use Auth;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -22,25 +21,35 @@ class OrderController extends Controller {
         $this->rabbitMQService = $rabbitMQService;
     }
 
-    public function getAll(): JsonResponse {
+    public function getAll(Request $request): JsonResponse {
         $orders = $this->orderRepository->all();
-        return ApiResponse::success($orders, 'Pedidos obtidos com sucesso', 201);
+        return ApiResponse::success($orders, 'Pedidos obtidos com sucesso');
     }
 
     public function create(Request $request): JsonResponse {
         try {
             $this->validate($request, [
-                'products' => 'required|array',
-                'products.*.product_id' => 'required|string',
-                'products.*.quantity' => 'required|integer|min:1',
-                'products.*.price' => 'required|numeric|min:0',
+                'items' => 'required|array|min:1',
+                'items.*.product_id' => 'required|string|uuid',
+                'items.*.name' => 'required|string|max:255',
+                'items.*.quantity' => 'required|integer|min:1',
+                'items.*.price' => 'required|numeric|min:0',
                 'shipping_address' => 'required|array',
-                'total_amount' => 'required|numeric'
+                'shipping_address.street' => 'required|string',
+                'shipping_address.city' => 'required|string',
+                'shipping_address.state' => 'required|string|size:2',
+                'shipping_address.zip_code' => 'required|string',
             ]);
 
             $payload = $request->all();
-            $payload['user_id'] = Auth::user()->uuid;
+            
+            $totalAmount = array_reduce($payload['items'], function ($sum, $item) {
+                return $sum + ($item['quantity'] * $item['price']);
+            }, 0);
+            
+            $payload['user_id'] = $request->auth->sub;
             $payload['status'] = 'pending_payment';
+            $payload['total_amount'] = $totalAmount;
 
             $order = $this->orderRepository->create($payload);
 
@@ -55,7 +64,6 @@ class OrderController extends Controller {
     public function get($id, Request $request): JsonResponse {
         $order = $this->orderRepository->find($id);
         
-        // Ensure user can only see their own order
         if (!$order || $order->user_id !== $request->auth->sub) {
             return ApiResponse::error('Pedido não encontrado', 404);
         }

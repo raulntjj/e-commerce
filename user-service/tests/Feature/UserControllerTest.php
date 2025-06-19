@@ -10,14 +10,14 @@ class UserControllerTest extends TestCase {
     use DatabaseMigrations;
 
     /** @test */
-    public function it_can_create_a_user(): void {
+    public function it_can_register_a_new_user(): void {
         $payload = [
             'name' => 'John Doe',
             'email' => 'john.doe@example.com',
             'password' => 'password123',
         ];
 
-        $this->post('/users', $payload);
+        $this->post('/register', $payload);
 
         $this->assertResponseStatus(201);
         $this->seeInDatabase('users', ['email' => 'john.doe@example.com']);
@@ -25,35 +25,35 @@ class UserControllerTest extends TestCase {
     }
 
     /** @test */
-    public function it_can_get_a_specific_user(): void {
-        $user = User::factory()->create();
+    public function an_authenticated_user_can_get_a_specific_user(): void {
+        $auth = $this->authenticate();
+        $userToFind = User::factory()->create();
 
-        $this->get('/users/' . $user->uuid);
+        $this->get('/users/' . $userToFind->uuid, $auth['headers']);
 
         $this->assertResponseOk();
-        $this->seeJson(['uuid' => $user->uuid, 'email' => $user->email]);
+        $this->seeJson(['uuid' => $userToFind->uuid, 'email' => $userToFind->email]);
     }
 
     /** @test */
-    public function it_can_get_all_users(): void {
+    public function an_authenticated_user_can_get_all_users(): void {
+        $auth = $this->authenticate();
         User::factory()->count(5)->create();
 
-        $this->get('/users');
+        $this->get('/users', $auth['headers']);
         
         $this->assertResponseOk();
-        $this->seeJsonStructure([
-            'data' => [
-                '*' => ['uuid', 'name', 'email']
-            ]
-        ]);
+        $response = json_decode($this->response->getContent(), true);
+        $this->assertCount(6, $response['data']); // 5 criados + 1 autenticado
     }
 
     /** @test */
-    public function it_can_update_a_user(): void {
-        $user = User::factory()->create();
+    public function an_authenticated_user_can_update_their_own_data(): void {
+        $auth = $this->authenticate();
+        $user = $auth['user'];
         $payload = ['name' => 'Jane Doe'];
 
-        $this->put('/users/' . $user->uuid, $payload);
+        $this->put('/users/' . $user->uuid, $payload, $auth['headers']);
 
         $this->assertResponseOk();
         $this->seeInDatabase('users', ['uuid' => $user->uuid, 'name' => 'Jane Doe']);
@@ -61,13 +61,11 @@ class UserControllerTest extends TestCase {
     }
 
     /** @test */
-    public function it_can_delete_a_user(): void {
-        $user = User::factory()->create();
+    public function unauthenticated_user_cannot_access_protected_routes(): void {
+        $this->get('/users');
+        $this->assertResponseStatus(401);
 
-        $this->delete('/users/' . $user->uuid);
-
-        $this->assertResponseOk();
-        $this->seeInDatabase('users', ['uuid' => $user->uuid]); 
-        $this->assertNotNull(User::withTrashed()->find($user->uuid)->deleted_at);
+        $this->get('/users/some-uuid');
+        $this->assertResponseStatus(401);
     }
 }

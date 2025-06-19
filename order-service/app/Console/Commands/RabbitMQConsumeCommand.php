@@ -2,7 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Repositories\Contracts\ProductRepositoryInterface;
+use App\Listeners\PaymentSucceededListener;
+use App\Repositories\Contracts\OrderRepositoryInterface;
 use App\Services\RabbitMQService;
 use Illuminate\Console\Command;
 use PhpAmqpLib\Message\AMQPMessage;
@@ -17,34 +18,18 @@ class RabbitMQConsumeCommand extends Command {
         $this->rabbitMQService = $rabbitMQService;
     }
 
-    public function handle(ProductRepositoryInterface $productRepository): void {
-        $queueName = 'product_events_queue';
-        $routingKeys = ['product.*', 'order.created'];
+    public function handle(OrderRepositoryInterface $orderRepository): void {
+        $queueName = 'order_service_queue';
+        $routingKeys = ['payment.succeeded', 'payment.failed']; 
 
-        $this->info(" [*] Product worker is now listening for events. To exit press CTRL+C");
+        $this->info(" [*] Order worker is now listening for events. To exit press CTRL+C");
 
-        $this->rabbitMQService->consume($queueName, $routingKeys, function (AMQPMessage $msg) use ($productRepository): void {
+        $listener = new PaymentSucceededListener($orderRepository);
+
+        $this->rabbitMQService->consume($queueName, $routingKeys, function (AMQPMessage $msg) use ($listener): void {
             $this->info("\n> Event Received: [" . $msg->getRoutingKey() . "]");
-            $payload = json_decode($msg->body, true);
-
-            switch ($msg->getRoutingKey()) {
-                case 'order.created':
-                    foreach ($payload['products'] as $product) {
-                        $p = $productRepository->find($product['product_id']);
-                        if ($p) {
-                            $newStock = $p->stock - $product['quantity'];
-                            $productRepository->update($p->uuid, ['stock' => $newStock]);
-                            $this->info("   - Stock updated for product {$p->name}.");
-                        }
-                    }
-                    break;
-                case 'product.created':
-                case 'product.updated':
-                case 'product.deleted':
-                     Log::info("AUDIT EVENT: '{$msg->getRoutingKey()}' | Payload: {$msg->body}");
-                     $this->info("  - Event successfully audited.");
-                    break;
-            }
+            $listener->handle($msg);
+            $this->info("  - Event processed successfully.");
         });
     }
 }
