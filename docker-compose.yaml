@@ -30,7 +30,23 @@ services:
       - PAYMENT_SERVICE_URL=http://payment-service:3000
       - NOTIFICATION_SERVICE_URL=http://notification-service:3000
     networks: [ecommerce-net, ecommerce-internal]
-    depends_on: [user-service, product-service, cart-service, order-service, payment-service, notification-service, redis]
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+      product-service:
+        condition: service_started
+      cart-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+      payment-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+      redis:
+        condition: service_started
 
   # --- SERVIÇOS PHP/LUMEN ---
   user-service: # MySQL
@@ -48,7 +64,11 @@ services:
       - RABBITMQ_HOST=rabbitmq
       - JWT_SECRET=${JWT_SECRET}
     networks: [ecommerce-net, ecommerce-internal]
-    depends_on: [mysql, rabbitmq]
+    depends_on:
+      mysql:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
 
   user-service-worker:
     build: { context: ./user-service }
@@ -65,7 +85,11 @@ services:
       - RABBITMQ_HOST=rabbitmq
       - JWT_SECRET=${JWT_SECRET}
     networks: [ecommerce-internal]
-    depends_on: [rabbitmq, mysql]
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mysql:
+        condition: service_started
     restart: on-failure
 
   product-service: # MySQL
@@ -83,6 +107,11 @@ services:
       - RABBITMQ_HOST=rabbitmq
       - JWT_SECRET=${JWT_SECRET}
     networks: [ecommerce-net, ecommerce-internal]
+    depends_on:
+        mysql:
+            condition: service_started
+        rabbitmq:
+            condition: service_healthy
 
   product-service-worker:
     build: { context: ./product-service }
@@ -99,7 +128,11 @@ services:
       - RABBITMQ_HOST=rabbitmq
       - JWT_SECRET=${JWT_SECRET}
     networks: [ecommerce-internal]
-    depends_on: [rabbitmq, mysql]
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mysql:
+        condition: service_started
     restart: on-failure
 
   order-service:
@@ -117,7 +150,11 @@ services:
       - RABBITMQ_HOST=rabbitmq
       - JWT_SECRET=${JWT_SECRET}
     networks: [ecommerce-net, ecommerce-internal]
-    depends_on: [mysql, rabbitmq]
+    depends_on:
+      mysql:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
 
   order-service-worker:
     build: { context: ./order-service }
@@ -134,7 +171,11 @@ services:
       - RABBITMQ_HOST=rabbitmq
       - JWT_SECRET=${JWT_SECRET}
     networks: [ecommerce-internal]
-    depends_on: [rabbitmq, mysql]
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mysql:
+        condition: service_started
     restart: on-failure
 
   # --- SERVIÇOS NODE.JS ---
@@ -150,6 +191,12 @@ services:
       - REDIS_PORT=6379
       - RABBITMQ_HOST=rabbitmq
     networks: [ecommerce-net, ecommerce-internal]
+    depends_on:
+        redis:
+            condition: service_started
+        rabbitmq:
+            condition: service_healthy
+
 
   payment-service: # MySQL
     build:
@@ -167,6 +214,11 @@ services:
       - DB_PASSWORD=root
       - RABBITMQ_HOST=rabbitmq
     networks: [ecommerce-net, ecommerce-internal]
+    depends_on:
+        mysql:
+            condition: service_started
+        rabbitmq:
+            condition: service_healthy
 
   notification-service: # MongoDB
     build:
@@ -184,6 +236,11 @@ services:
       - DB_PASSWORD=root
       - RABBITMQ_HOST=rabbitmq
     networks: [ecommerce-net, ecommerce-internal]
+    depends_on:
+        mongodb:
+            condition: service_started
+        rabbitmq:
+            condition: service_healthy
 
   # --- BANCOS, CACHE, MENSAGERIA e MONITORAMENTO ---
   mysql:
@@ -191,7 +248,7 @@ services:
     environment:
       - MYSQL_ROOT_PASSWORD=root
       - MYSQL_DATABASE=users_db
-    volumes: ["mysql_data:/home/raulntjj/Desktop/ecommerce-project/databases/mysql"]
+    volumes: ["mysql_data:/var/lib/mysql"]
     ports: ["3307:3306"]
     networks: [ecommerce-internal]
 
@@ -200,12 +257,12 @@ services:
     environment:
       - MONGO_INITDB_ROOT_USERNAME=root
       - MONGO_INITDB_ROOT_PASSWORD=root
-    volumes: ["mongo_data:/home/raulntjj/Desktop/ecommerce-project/databases/mongodb"]
+    volumes: ["mongo_data:/data/db"]
     networks: [ecommerce-internal]
 
   redis:
     image: redis:7-alpine
-    volumes: ["redis_data:/home/raulntjj/Desktop/ecommerce-project/databases/redis"]
+    volumes: ["redis_data:/data"]
     networks: [ecommerce-internal, ecommerce-net]
 
   rabbitmq:
@@ -215,6 +272,11 @@ services:
       - RABBITMQ_DEFAULT_PASS=root
     ports: ["5672:5672", "15672:15672"]
     networks: [ecommerce-internal]
+    healthcheck:
+        test: ["CMD", "rabbitmq-diagnostics", "ping"]
+        interval: 30s
+        timeout: 10s
+        retries: 5
 
   prometheus:
     image: prom/prometheus:v2.47.2
