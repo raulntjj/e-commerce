@@ -25,10 +25,10 @@ services:
       - REDIS_PORT=6379
       - USER_SERVICE_URL=http://user-service
       - PRODUCT_SERVICE_URL=http://product-service
-      - CART_SERVICE_URL=http://cart-service:3000
+      - CART_SERVICE_URL=http://cart-service
       - ORDER_SERVICE_URL=http://order-service
-      - PAYMENT_SERVICE_URL=http://payment-service:3000
-      - NOTIFICATION_SERVICE_URL=http://notification-service:3000
+      - PAYMENT_SERVICE_URL=http://payment-service
+      - NOTIFICATION_SERVICE_URL=http://notification-service
     networks: [ecommerce-net, ecommerce-internal]
     depends_on:
       rabbitmq:

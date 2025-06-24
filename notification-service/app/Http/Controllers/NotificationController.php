@@ -28,7 +28,9 @@ class NotificationController extends Controller {
             return ApiResponse::error('Notificação não encontrada', 404);
         }
 
-        if ($notification->user_id !== Auth::id()) {
+        $authenticatedUserId = Auth::id();
+
+        if ($notification->user_id !== $authenticatedUserId) {
              return ApiResponse::error('Não autorizado', 403);
         }
 

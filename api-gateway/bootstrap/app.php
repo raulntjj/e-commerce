@@ -38,7 +38,6 @@ $app = new Laravel\Lumen\Application(
 |
 */
 
-// Adicione isto após a criação da aplicação
 $app->singleton(\Redis::class, function () {
     $redis = new \Redis();
     $redis->connect(

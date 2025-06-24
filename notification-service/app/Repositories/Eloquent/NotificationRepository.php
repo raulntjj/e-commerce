@@ -4,6 +4,7 @@ namespace App\Repositories\Eloquent;
 
 use App\Models\Notification;
 use App\Repositories\Contracts\NotificationRepositoryInterface;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
 class NotificationRepository implements NotificationRepositoryInterface {
@@ -24,7 +25,7 @@ class NotificationRepository implements NotificationRepositoryInterface {
     public function markAsRead(string $notificationId): ?Notification {
         $notification = $this->model->find($notificationId);
         if ($notification) {
-            $notification->update(['read_at' => now()]);
+            $notification->update(['read_at' => Carbon::now()]);
             return $notification;
         }
         return null;
