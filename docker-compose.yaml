@@ -178,34 +178,44 @@ services:
         condition: service_started
     restart: on-failure
 
-  # --- SERVIÇOS NODE.JS ---
-  cart-service: # Redis
-    build:
-      context: ./cart-service
-      args: { NODE_ENV: development }
-    volumes: [./cart-service:/app, /app/node_modules]
-    ports: ["4003:3000"]
+  cart-service:
+    build: { context: ./cart-service }
+    volumes: [./cart-service:/app]
+    ports: ["4003:80"]
     environment:
-      - NODE_ENV=development
+      - APP_ENV=development
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - RABBITMQ_HOST=rabbitmq
+      - JWT_SECRET=${JWT_SECRET}
     networks: [ecommerce-net, ecommerce-internal]
     depends_on:
-        redis:
-            condition: service_started
-        rabbitmq:
-            condition: service_healthy
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
 
-
-  payment-service: # MySQL
-    build:
-      context: ./payment-service
-      args: { NODE_ENV: development }
-    volumes: [./payment-service:/app, /app/node_modules]
-    ports: ["4005:3000", "9102:9100"]
+  cart-service-worker:
+    build: { context: ./cart-service }
+    volumes: [./cart-service:/app]
+    command: php /app/artisan rabbitmq:consume
     environment:
-      - NODE_ENV=development
+      - APP_ENV=development
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - RABBITMQ_HOST=rabbitmq
+    networks: [ecommerce-internal]
+    depends_on:
+      rabbitmq: { condition: service_healthy }
+      redis: { condition: service_started }
+    restart: on-failure
+
+  payment-service:
+    build: { context: ./payment-service }
+    volumes: [./payment-service:/app]
+    ports: ["4005:80"]
+    environment:
+      - APP_ENV=development
       - DB_CONNECTION=mysql
       - DB_HOST=mysql
       - DB_PORT=3306
@@ -213,34 +223,68 @@ services:
       - DB_USERNAME=root
       - DB_PASSWORD=root
       - RABBITMQ_HOST=rabbitmq
+      - JWT_SECRET=${JWT_SECRET}
     networks: [ecommerce-net, ecommerce-internal]
     depends_on:
-        mysql:
-            condition: service_started
-        rabbitmq:
-            condition: service_healthy
+      mysql: { condition: service_started }
+      rabbitmq: { condition: service_healthy }
 
-  notification-service: # MongoDB
-    build:
-      context: ./notification-service
-      args: { NODE_ENV: development }
-    volumes: [./notification-service:/app, /app/node_modules]
-    ports: ["4004:3000", "9103:9100"]
+  payment-service-worker:
+    build: { context: ./payment-service }
+    volumes: [./payment-service:/app]
+    command: php /app/artisan rabbitmq:consume
     environment:
-      - NODE_ENV=development
-      - DB_CONNECTION=mongodb
-      - DB_HOST=mongodb
-      - DB_PORT=27017
+      - APP_ENV=development
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=payments_db
+      - DB_USERNAME=root
+      - DB_PASSWORD=root
+      - RABBITMQ_HOST=rabbitmq
+    networks: [ecommerce-internal]
+    depends_on:
+      rabbitmq: { condition: service_healthy }
+      mysql: { condition: service_started }
+    restart: on-failure
+
+  notification-service:
+    build: { context: ./notification-service }
+    volumes: [./notification-service:/app]
+    ports: ["4004:80"]
+    environment:
+      - APP_ENV=development
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
       - DB_DATABASE=notifications_db
       - DB_USERNAME=root
       - DB_PASSWORD=root
       - RABBITMQ_HOST=rabbitmq
+      - JWT_SECRET=${JWT_SECRET}
     networks: [ecommerce-net, ecommerce-internal]
     depends_on:
-        mongodb:
-            condition: service_started
-        rabbitmq:
-            condition: service_healthy
+      mysql: { condition: service_started }
+      rabbitmq: { condition: service_healthy }
+
+  notification-service-worker:
+    build: { context: ./notification-service }
+    volumes: [./notification-service:/app]
+    command: php /app/artisan rabbitmq:consume
+    environment:
+      - APP_ENV=development
+      - DB_CONNECTION=mysql
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_DATABASE=notifications_db
+      - DB_USERNAME=root
+      - DB_PASSWORD=root
+      - RABBITMQ_HOST=rabbitmq
+    networks: [ecommerce-internal]
+    depends_on:
+      rabbitmq: { condition: service_healthy }
+      mysql: { condition: service_started }
+    restart: on-failure
 
   # --- BANCOS, CACHE, MENSAGERIA e MONITORAMENTO ---
   mysql:

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Responses\ApiResponse;
 use App\Repositories\Contracts\ProductRepositoryInterface;
 use App\Services\RabbitMQService;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -35,12 +36,11 @@ class ProductController extends Controller {
     public function create(Request $request): JsonResponse {
         try {
             $product = $this->productRepository->create($request->all());
-           
             $this->rabbitMQService->publish('product.created', $product->toArray());
 
             return ApiResponse::success($product, 'Produto criado com sucesso.', 201);
-        } catch (ValidationException $e) {
-            return ApiResponse::error('Dados inválidos', 422, $e->errors());
+        } catch (Exception $e) {
+            return ApiResponse::error('Dados inválidos', 422, [$e->getMessage()]);
         }
     }
 

@@ -1,23 +1,30 @@
-FROM node:18-alpine AS build
+# Estágio de build com o Composer
+FROM composer:2 as vendor
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install
+COPY database/ database/
+COPY composer.json composer.json
+COPY composer.lock composer.lock
 
-COPY . .
+RUN composer install \
+    --ignore-platform-reqs \
+    --no-interaction \
+    --no-plugins \
+    --no-scripts \
+    --prefer-dist
 
 
-FROM node:18-alpine
+# Estágio final com Nginx e PHP-FPM
+FROM webdevops/php-nginx:8.2-alpine
 
-WORKDIR /app
+# Variáveis de ambiente
+ENV WEB_DOCUMENT_ROOT /app/public
+ENV APP_ENV=production
 
-ENV NODE_ENV=production
+# Copia os arquivos da aplicação e as dependências
+COPY . /app
+COPY --from=vendor /app/vendor/ /app/vendor/
 
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/package.json ./package.json
-COPY --from=build /app/index.js ./index.js
-
-EXPOSE 3000
-
-CMD ["node", "index.js"]
+# Ajusta as permissões
+RUN chown -R application:application /app

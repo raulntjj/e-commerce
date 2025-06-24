@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Responses\ApiResponse;
 use App\Repositories\Contracts\OrderRepositoryInterface;
 use App\Services\RabbitMQService;
+use Auth;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -47,7 +48,7 @@ class OrderController extends Controller {
                 return $sum + ($item['quantity'] * $item['price']);
             }, 0);
             
-            $payload['user_id'] = $request->auth->sub;
+            $payload['user_id'] = Auth::id();
             $payload['status'] = 'pending_payment';
             $payload['total_amount'] = $totalAmount;
 
