@@ -2,17 +2,20 @@
 
 /** @var \Laravel\Lumen\Routing\Router $router */
 
-/*
-|--------------------------------------------------------------------------
-| Application Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register all of the routes for an application.
-| It is a breeze. Simply tell Lumen the URIs it should respond to
-| and give it the Closure to call when that URI is requested.
-|
-*/
+use App\Http\Responses\ApiResponse;
 
 $router->get('/', function () use ($router) {
-    return $router->app->version();
+    return ApiResponse::success([
+        'system' => 'Cart Service - eCommerce',
+        'version' => '1.0.0',
+        'status' => 'Operacional',
+    ], 'Requisição bem-sucedida');
+});
+
+$router->group(['prefix' => 'cart', 'middleware' => 'auth'], function () use ($router) {
+    $router->get('/', 'CartController@get');
+    $router->delete('/', 'CartController@clearCart');
+
+    $router->put('/items', 'CartController@upsertItem');
+    $router->delete('/items/{productId}', 'CartController@removeItem');
 });
